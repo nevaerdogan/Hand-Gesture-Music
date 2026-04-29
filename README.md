@@ -61,7 +61,7 @@ sounddevice==0.5.5
 ## Installation
 
 ```bash
-git clone <this-repo>
+git clone https://github.com/nevaerdogan/Hand-Gesture-Music.git
 cd gesture_instrument
 pip install -r requirements.txt
 python main.py
