@@ -4,6 +4,8 @@ A real-time, touchless musical instrument that runs entirely on a standard webca
 
 ---
 
+![Gesture Instrument Demo](gesture_insturment-ezgif.com-crop.gif)
+
 ## How It Works
 
 The application captures your webcam feed and tracks both hands simultaneously using a neural network landmark model. Two circular menus are projected onto the video:
