@@ -4,7 +4,7 @@ A real-time, touchless musical instrument that runs entirely on a standard webca
 
 ---
 
-![Gesture Instrument Demo](gesture_instrument/gesture_insturment-ezgif.com-crop(1).gif)
+![Gesture Instrument Demo](gesture_instrument/gesture_music.gif)
 
 ## How It Works
 
