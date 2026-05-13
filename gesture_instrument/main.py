@@ -5,6 +5,7 @@ import time
 import importlib
 
 def install_missing():
+    """Check that all required packages are installed, exit if any are missing."""
     package_map = {
         "mediapipe": "mediapipe==0.10.35",
         "cv2": "opencv-python==4.13.0.92",
@@ -31,6 +32,7 @@ WINDOW_NAME = "Gesture Instrument"
 
 
 def build_menu(cfg) -> RadialMenu:
+    """Create a radial menu from configuration dictionary."""
     return RadialMenu(
         center_ratio=cfg["center_ratio"],
         inner_r_ratio=cfg["inner_r_ratio"],
@@ -42,6 +44,7 @@ def build_menu(cfg) -> RadialMenu:
 
 
 def main():
+    """Run the gesture instrument: capture video, track hands, synthesize audio."""
     # Platform-specific camera backend for cross-platform compatibility
     if platform.system() == "Windows":
         backend = cv2.CAP_DSHOW
