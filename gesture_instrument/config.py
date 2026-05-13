@@ -35,7 +35,6 @@ RIGHT_MENU = {
 }
 
 SAMPLE_RATE = 44100
-FPS_TARGET = 30
 DISPLAY_W = 960   # 4:3 ratio — no horizontal stretch
 DISPLAY_H = 720
 DEBOUNCE_S = 0.08  # seconds a selection must be stable before triggering audio

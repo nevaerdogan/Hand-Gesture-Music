@@ -1,5 +1,5 @@
 # Gesture Instrument
-Hello
+
 A real-time, touchless musical instrument that runs entirely on a standard webcam. You play chords by pointing your hands at two radial menus overlaid on the live camera feed — no MIDI controller, no audio interface, no physical contact required.
 
 ---
@@ -45,11 +45,11 @@ Example combinations you can form:
 - A working webcam
 - Speakers or headphones
 
-Python packages (auto-installed on first run):
+Python packages required:
 
 ```
 mediapipe==0.10.35
-opencv-python==4.9.0.80
+opencv-python==4.13.0.92
 numpy>=1.26.4
 sounddevice==0.5.5
 ```
@@ -61,8 +61,8 @@ sounddevice==0.5.5
 ## Installation
 
 ```bash
-git clone https://github.com/nevaerdogan/Hand-Gesture-Music.git
-cd gesture_instrument
+git clone https://github.com/juanpflores/Hand-Gesture-Music.git
+cd Hand-Gesture-Music/gesture_instrument
 pip install -r requirements.txt
 python main.py
 ```

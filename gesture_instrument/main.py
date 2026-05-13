@@ -1,18 +1,13 @@
 import subprocess
 import sys
-
-REQUIRED = [
-    "mediapipe==0.10.35",
-    "opencv-python==4.9.0.80",
-    "numpy>=1.26.4",
-    "sounddevice==0.5.5"
-]
+import platform
+import time
+import importlib
 
 def install_missing():
-    import importlib
     package_map = {
         "mediapipe": "mediapipe==0.10.35",
-        "cv2": "opencv-python==4.9.0.80",
+        "cv2": "opencv-python==4.13.0.92",
         "numpy": "numpy>=1.26.4",
         "sounddevice": "sounddevice==0.5.5"
     }
@@ -20,12 +15,11 @@ def install_missing():
         try:
             importlib.import_module(import_name)
         except ImportError:
-            print(f"Installing {pip_name}...")
-            subprocess.check_call([sys.executable, "-m", "pip", "install", pip_name])
+            print(f"Missing package '{import_name}'. Run: pip install -r requirements.txt")
+            sys.exit(1)
 
 install_missing()
 
-import time
 import cv2
 
 from hand_tracker import HandTracker
@@ -48,7 +42,14 @@ def build_menu(cfg) -> RadialMenu:
 
 
 def main():
-    cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+    # Platform-specific camera backend for cross-platform compatibility
+    backend = cv2.CAP_DSHOW if platform.system() == "Windows" else cv2.CAP_V4L2 if platform.system() == "Linux" else 0
+    cap = cv2.VideoCapture(0, backend)
+
+    if not cap.isOpened():
+        print("Error: could not open webcam. Check that it is connected and not in use.")
+        sys.exit(1)
+
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
@@ -69,7 +70,8 @@ def main():
     fps         = 0
     frame_count = 0
 
-    while True:
+    try:
+        while True:
         ret, frame = cap.read()
         if not ret:
             break
@@ -133,7 +135,7 @@ def main():
             chord_text  = f"{note_label} {chord_label}"
             font = cv2.FONT_HERSHEY_SIMPLEX
             scale, thick = 1.8, 3
-            (tw, *_), _ = cv2.getTextSize(chord_text, font, scale, thick)
+            (tw, th), baseline = cv2.getTextSize(chord_text, font, scale, thick)
             tx, ty = (w - tw) // 2, 70
             cv2.putText(canvas, chord_text, (tx + 2, ty + 2), font, scale, (0, 0, 0),     thick + 2, cv2.LINE_AA)
             cv2.putText(canvas, chord_text, (tx,     ty),     font, scale, (255, 255, 255), thick,     cv2.LINE_AA)
@@ -150,10 +152,10 @@ def main():
         cv2.imshow(WINDOW_NAME, canvas)
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
-
-    engine.close()
-    cap.release()
-    cv2.destroyAllWindows()
+    finally:
+        engine.close()
+        cap.release()
+        cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":

@@ -1,5 +1,7 @@
 import os
 import urllib.request
+import tempfile
+import shutil
 import mediapipe as mp
 from mediapipe.tasks.python.vision.hand_landmarker import (
     HandLandmarker,
@@ -22,8 +24,15 @@ TRACKED_TIPS = [4, 8, 12]  # thumb, index, middle
 def _ensure_model():
     if not os.path.exists(_MODEL_PATH):
         print("Downloading hand landmark model (~8 MB)...")
-        urllib.request.urlretrieve(_MODEL_URL, _MODEL_PATH)
-        print("Model downloaded.")
+        tmp = _MODEL_PATH + ".tmp"
+        try:
+            urllib.request.urlretrieve(_MODEL_URL, tmp)
+            shutil.move(tmp, _MODEL_PATH)
+            print("Model downloaded.")
+        except Exception as e:
+            if os.path.exists(tmp):
+                os.remove(tmp)
+            raise RuntimeError(f"Failed to download hand landmark model: {e}") from e
 
 
 class HandTracker:
@@ -34,7 +43,6 @@ class HandTracker:
             running_mode=vision_task_running_mode.VisionTaskRunningMode.IMAGE,
             num_hands=2,
             min_hand_detection_confidence=0.7,
-            min_tracking_confidence=0.5,
         )
         self._landmarker = HandLandmarker.create_from_options(options)
 
