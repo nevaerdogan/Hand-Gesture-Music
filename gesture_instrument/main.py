@@ -61,7 +61,6 @@ def main():
             break
         if attempt < max_retries - 1:
             print(f"Camera not available (attempt {attempt + 1}/{max_retries}). If prompted, grant camera permission in System Preferences.")
-            import time
             time.sleep(1)
             cap = cv2.VideoCapture(0, backend)
 
