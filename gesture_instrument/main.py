@@ -43,15 +43,41 @@ def build_menu(cfg) -> RadialMenu:
 
 def main():
     # Platform-specific camera backend for cross-platform compatibility
-    backend = cv2.CAP_DSHOW if platform.system() == "Windows" else cv2.CAP_V4L2 if platform.system() == "Linux" else 0
+    if platform.system() == "Windows":
+        backend = cv2.CAP_DSHOW
+    elif platform.system() == "Linux":
+        backend = cv2.CAP_V4L2
+    elif platform.system() == "Darwin":  # macOS
+        backend = cv2.CAP_AVFOUNDATION
+    else:
+        backend = 0
+
     cap = cv2.VideoCapture(0, backend)
 
+    # Try to open camera with retries for macOS permission prompts
+    max_retries = 3
+    for attempt in range(max_retries):
+        if cap.isOpened():
+            break
+        if attempt < max_retries - 1:
+            print(f"Camera not available (attempt {attempt + 1}/{max_retries}). If prompted, grant camera permission in System Preferences.")
+            import time
+            time.sleep(1)
+            cap = cv2.VideoCapture(0, backend)
+
     if not cap.isOpened():
-        print("Error: could not open webcam. Check that it is connected and not in use.")
+        print("\nError: Could not access webcam.")
+        print("\nOn macOS, you may need to:")
+        print("1. Grant camera permission: System Preferences → Security & Privacy → Camera")
+        print("2. Restart this application after granting permission")
+        print("\nOtherwise, check that:")
+        print("- Webcam is connected and not in use by another application")
+        print("- You have proper USB permissions for the device")
         sys.exit(1)
 
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+    cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # Reduce latency by limiting buffer
 
     cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
     cv2.resizeWindow(WINDOW_NAME, DISPLAY_W, DISPLAY_H)
@@ -72,86 +98,86 @@ def main():
 
     try:
         while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
+            ret, frame = cap.read()
+            if not ret:
+                break
 
-        if cv2.getWindowProperty(WINDOW_NAME, cv2.WND_PROP_VISIBLE) < 1:
-            break
+            if cv2.getWindowProperty(WINDOW_NAME, cv2.WND_PROP_VISIBLE) < 1:
+                break
 
-        hands = tracker.get_hands(frame)
-        # flip display frame to match mirror view used inside tracker
-        frame  = cv2.flip(frame, 1)
-        # Resize to display resolution maintaining 4:3 — no horizontal stretch
-        canvas = cv2.resize(frame, (DISPLAY_W, DISPLAY_H))
+            hands = tracker.get_hands(frame)
+            # flip display frame to match mirror view used inside tracker
+            frame  = cv2.flip(frame, 1)
+            # Resize to display resolution maintaining 4:3 — no horizontal stretch
+            canvas = cv2.resize(frame, (DISPLAY_W, DISPLAY_H))
 
-        left_tips  = hands.get("Left")   # list of (x,y) or None
-        right_tips = hands.get("Right")
+            left_tips  = hands.get("Left")   # list of (x,y) or None
+            right_tips = hands.get("Right")
 
-        left_hover  = left_menu.get_hovered(left_tips, canvas.shape)
-        right_hover = right_menu.get_hovered(right_tips, canvas.shape)
+            left_hover  = left_menu.get_hovered(left_tips, canvas.shape)
+            right_hover = right_menu.get_hovered(right_tips, canvas.shape)
 
-        left_menu.render(canvas, left_hover)
-        # Show active chord name in the right panel's inner circle
-        right_center_label = RIGHT_MENU["segments"][right_hover]["label"] if right_hover is not None else (active_chord[1] if active_chord else None)
-        right_menu.render(canvas, right_hover, center_label=right_center_label)
+            left_menu.render(canvas, left_hover)
+            # Show active chord name in the right panel's inner circle
+            right_center_label = RIGHT_MENU["segments"][right_hover]["label"] if right_hover is not None else (active_chord[1] if active_chord else None)
+            right_menu.render(canvas, right_hover, center_label=right_center_label)
 
-        selected_note  = LEFT_MENU["segments"][left_hover]["value"]  if left_hover  is not None else None
-        selected_chord = RIGHT_MENU["segments"][right_hover]["value"] if right_hover is not None else None
-        both_selected  = selected_note is not None and selected_chord is not None
+            selected_note  = LEFT_MENU["segments"][left_hover]["value"]  if left_hover  is not None else None
+            selected_chord = RIGHT_MENU["segments"][right_hover]["value"] if right_hover is not None else None
+            both_selected  = selected_note is not None and selected_chord is not None
 
-        now = time.time()
-        if both_selected:
-            candidate = (selected_note, selected_chord)
-            if candidate != pending_chord:
-                pending_chord = candidate
-                pending_since = now
-            # Trigger once the candidate has been stable for DEBOUNCE_S
-            if (now - pending_since) >= DEBOUNCE_S and candidate != active_chord:
-                engine.play_chord(selected_note, selected_chord)
-                active_chord = candidate
-        else:
-            pending_chord = None
+            now = time.time()
+            if both_selected:
+                candidate = (selected_note, selected_chord)
+                if candidate != pending_chord:
+                    pending_chord = candidate
+                    pending_since = now
+                # Trigger once the candidate has been stable for DEBOUNCE_S
+                if (now - pending_since) >= DEBOUNCE_S and candidate != active_chord:
+                    engine.play_chord(selected_note, selected_chord)
+                    active_chord = candidate
+            else:
+                pending_chord = None
+                if active_chord is not None:
+                    engine.stop()
+                    active_chord = None
+
+            # Fingertip dots — draw all three tracked tips per hand
+            h, w = canvas.shape[:2]
+            if left_tips is not None:
+                for pt in left_tips:
+                    cv2.circle(canvas, (int(pt[0] * w), int(pt[1] * h)),
+                               7, LEFT_MENU["accent_color"], -1, cv2.LINE_AA)
+
+            if right_tips is not None:
+                for pt in right_tips:
+                    cv2.circle(canvas, (int(pt[0] * w), int(pt[1] * h)),
+                               7, RIGHT_MENU["accent_color"], -1, cv2.LINE_AA)
+
+            # Chord name — top centre
             if active_chord is not None:
-                engine.stop()
-                active_chord = None
+                note_label  = LEFT_MENU["segments"][left_hover]["label"]  if left_hover  is not None else active_chord[0][:-1]
+                chord_label = RIGHT_MENU["segments"][right_hover]["label"] if right_hover is not None else active_chord[1]
+                chord_text  = f"{note_label} {chord_label}"
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                scale, thick = 1.8, 3
+                (tw, th), baseline = cv2.getTextSize(chord_text, font, scale, thick)
+                tx, ty = (w - tw) // 2, 70
+                cv2.putText(canvas, chord_text, (tx + 2, ty + 2), font, scale, (0, 0, 0),     thick + 2, cv2.LINE_AA)
+                cv2.putText(canvas, chord_text, (tx,     ty),     font, scale, (255, 255, 255), thick,     cv2.LINE_AA)
 
-        # Fingertip dots — draw all three tracked tips per hand
-        h, w = canvas.shape[:2]
-        if left_tips is not None:
-            for pt in left_tips:
-                cv2.circle(canvas, (int(pt[0] * w), int(pt[1] * h)),
-                           7, LEFT_MENU["accent_color"], -1, cv2.LINE_AA)
+            # FPS
+            frame_count += 1
+            if now - fps_timer >= 1.0:
+                fps        = frame_count
+                frame_count = 0
+                fps_timer  = now
+            cv2.putText(canvas, f"FPS: {fps}", (14, 30),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (200, 200, 200), 1, cv2.LINE_AA)
 
-        if right_tips is not None:
-            for pt in right_tips:
-                cv2.circle(canvas, (int(pt[0] * w), int(pt[1] * h)),
-                           7, RIGHT_MENU["accent_color"], -1, cv2.LINE_AA)
-
-        # Chord name — top centre
-        if active_chord is not None:
-            note_label  = LEFT_MENU["segments"][left_hover]["label"]  if left_hover  is not None else active_chord[0][:-1]
-            chord_label = RIGHT_MENU["segments"][right_hover]["label"] if right_hover is not None else active_chord[1]
-            chord_text  = f"{note_label} {chord_label}"
-            font = cv2.FONT_HERSHEY_SIMPLEX
-            scale, thick = 1.8, 3
-            (tw, th), baseline = cv2.getTextSize(chord_text, font, scale, thick)
-            tx, ty = (w - tw) // 2, 70
-            cv2.putText(canvas, chord_text, (tx + 2, ty + 2), font, scale, (0, 0, 0),     thick + 2, cv2.LINE_AA)
-            cv2.putText(canvas, chord_text, (tx,     ty),     font, scale, (255, 255, 255), thick,     cv2.LINE_AA)
-
-        # FPS
-        frame_count += 1
-        if now - fps_timer >= 1.0:
-            fps        = frame_count
-            frame_count = 0
-            fps_timer  = now
-        cv2.putText(canvas, f"FPS: {fps}", (14, 30),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (200, 200, 200), 1, cv2.LINE_AA)
-
-        cv2.imshow(WINDOW_NAME, canvas)
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            break
+            cv2.imshow(WINDOW_NAME, canvas)
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                break
     finally:
         engine.close()
         cap.release()

@@ -197,7 +197,8 @@ Radii are stored as fractions of the display height so the menus scale correctly
 
 | Problem | Fix |
 |---------|-----|
-| Camera does not open | Another app may be using the webcam. Close it and retry. The app uses DirectShow on Windows (`CAP_DSHOW`) which is more reliable than the default MSMF backend. |
+| Camera does not open | **macOS**: System Preferences → Security & Privacy → Camera — ensure this app has permission. **Windows/Linux**: Another app may be using the webcam. Close it and retry. The app uses DirectShow on Windows (`CAP_DSHOW`) which is more reliable than the default MSMF backend. |
+| "Not authorized to capture video" (macOS) | Grant camera permission in System Preferences → Security & Privacy → Camera, then restart the application. You may need to restart Terminal/your IDE after granting permission for changes to take effect. |
 | No sound | Check your system audio output device. On Linux, ensure `libportaudio2` is installed. |
 | Low FPS | Hand detection runs on CPU. Close background applications. FPS of 15–20 is normal on a mid-range laptop. |
 | Hand not detected | Ensure adequate, even lighting. Avoid backlighting (bright window behind you). |
