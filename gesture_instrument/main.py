@@ -63,7 +63,11 @@ def main():
         if cap.isOpened():
             break
         if attempt < max_retries - 1:
-            print(f"Camera not available (attempt {attempt + 1}/{max_retries}). If prompted, grant camera permission in System Preferences.")
+            if platform.system() == "Darwin":
+                msg = f"Camera not available (attempt {attempt + 1}/{max_retries}). If prompted, grant camera permission in System Preferences."
+            else:
+                msg = f"Camera not available (attempt {attempt + 1}/{max_retries}). Retrying..."
+            print(msg)
             time.sleep(1)
             cap = cv2.VideoCapture(0, backend)
 
