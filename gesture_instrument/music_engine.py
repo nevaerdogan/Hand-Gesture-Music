@@ -114,7 +114,7 @@ class MusicEngine:
                 samplerate=self.sample_rate,
                 channels=1,
                 dtype="float32",
-                blocksize=2048,
+                blocksize=512,
                 callback=self._callback,
             )
             self._stream.start()

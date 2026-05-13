@@ -45,11 +45,11 @@ Example combinations you can form:
 - A working webcam
 - Speakers or headphones
 
-Python packages (auto-installed on first run):
+Python packages required:
 
 ```
 mediapipe==0.10.35
-opencv-python==4.9.0.80
+opencv-python==4.13.0.92
 numpy>=1.26.4
 sounddevice==0.5.5
 ```
@@ -61,8 +61,8 @@ sounddevice==0.5.5
 ## Installation
 
 ```bash
-git clone https://github.com/nevaerdogan/Hand-Gesture-Music.git
-cd gesture_instrument
+git clone https://github.com/juanpflores/Hand-Gesture-Music.git
+cd Hand-Gesture-Music/gesture_instrument
 pip install -r requirements.txt
 python main.py
 ```
@@ -197,7 +197,8 @@ Radii are stored as fractions of the display height so the menus scale correctly
 
 | Problem | Fix |
 |---------|-----|
-| Camera does not open | Another app may be using the webcam. Close it and retry. The app uses DirectShow on Windows (`CAP_DSHOW`) which is more reliable than the default MSMF backend. |
+| Camera does not open | **macOS**: System Preferences → Security & Privacy → Camera — ensure this app has permission. **Windows/Linux**: Another app may be using the webcam. Close it and retry. The app uses DirectShow on Windows (`CAP_DSHOW`) which is more reliable than the default MSMF backend. |
+| "Not authorized to capture video" (macOS) | Grant camera permission in System Preferences → Security & Privacy → Camera, then restart the application. You may need to restart Terminal/your IDE after granting permission for changes to take effect. |
 | No sound | Check your system audio output device. On Linux, ensure `libportaudio2` is installed. |
 | Low FPS | Hand detection runs on CPU. Close background applications. FPS of 15–20 is normal on a mid-range laptop. |
 | Hand not detected | Ensure adequate, even lighting. Avoid backlighting (bright window behind you). |
